@@ -196,25 +196,28 @@ fn zero_copy_parser(b: &mut test::Bencher) {
 //=========================================================================
 //  Making It Look Nice
 
-//pub trait StreamingIterator<'a, T: 'a> {
-//    fn next_in_stream(&mut self) -> Option<T>;
-//}
-//
-//impl<'a> StreamingIterator<'a, (&'a str, &'a str, &'a str)>
-//    for ZeroCopyParser<'a> {
-//
-//    #[inline]
-//    fn next_in_stream(&mut self) -> Option<(&str, &str, &str)> {
-//        self.next()
-//    }
-//}
+// I'd love to make this a trait...
+pub trait StreamingIterator<'a, T> {
+    fn next_in_stream(&mut self) -> Option<T>;
+}
+
+// ...so that we can make this an implementation of StreamingIterator.
+impl<'a> /*StreamingIterator<'a, (&'a str, &'a str, &'a str)>
+    for */ ZeroCopyParser<'a> {
+
+    #[inline]
+    pub fn next_in_stream(&mut self) -> Option<(&str, &str, &str)> {
+        self.next()
+    }
+}
 
 macro_rules! streaming_for {
-    ($var:ident in $expr:expr, $b:stmt) => {
+    ($var:pat in $expr:expr, $b:stmt) => {
         {
+            // Only evaluate once!
+            let ref mut iter = &mut $expr;
             loop {
-                let ref mut iter = &mut $expr;
-                match iter.next() {
+                match iter.next_in_stream() {
                     None => { break; }
                     Some($var) => { $b }
                 }
