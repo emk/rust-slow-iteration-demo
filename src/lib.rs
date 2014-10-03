@@ -137,6 +137,18 @@ impl<'a> ZeroCopyParser<'a> {
     }
 }
 
+// I tried:
+//
+// ```
+// impl<'a> Iterator<(&'a str,&'a str,&'a str)> for ZeroCopyParser<'a> {
+//    fn next(&mut self) -> Option<(&str, &str, &str)> {
+// ```
+//
+// But I got:
+//
+// method `next` has an incompatible type for trait: expected concrete
+// lifetime, found bound lifetime parameter
+
 #[bench]
 fn zero_copy_parser(b: &mut test::Bencher) {
     let file = make_pretend_file();
