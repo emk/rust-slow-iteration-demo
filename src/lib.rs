@@ -1,6 +1,8 @@
+//! I need the advice of some more experienced Rust hackers.
+//!
 //! I want to use Rust to write high-speed, un-pwn-able parsers.  This
-//! seems like a killer application for libraries written in Rust.  Below,
-//! I compare the performance and API of copying parsers versus zero-copy
+//! seems like a great application for libraries written in Rust.  Below, I
+//! compare the performance and API of copying parsers versus zero-copy
 //! parsers.  Anyway, here's the key benchmark:
 //!
 //! ```
