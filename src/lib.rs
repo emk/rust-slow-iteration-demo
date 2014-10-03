@@ -1,7 +1,7 @@
 //! I want to use Rust to write high-speed, un-pwn-able parsers.  This
-//! seems like a killer application for Rust libraries.  Below, I compare
-//! the performance and API of copying parsers versus zero-copy parsers.
-//! Anyway, here's the key benchmark:
+//! seems like a killer application for libraries written in Rust.  Below,
+//! I compare the performance and API of copying parsers versus zero-copy
+//! parsers.  Anyway, here's the key benchmark:
 //!
 //! ```
 //! test copying_parser   ... bench:     90432 ns/iter (+/- 5644) = 26 MB/s
@@ -11,8 +11,8 @@
 //! My goal: Can we make zero_copy_parser an instance of Iterator?  Or does
 //! Iterator force us to use something like copying_parser?
 //!
-//! And if Iterator does force us to copy, does this represent a flaw in
-//! Iterator?  Or there a design tradeoff here that can't be finessed?
+//! And if Iterator does force us to copy, is there some way to change
+//! Iterator that doesn't cause ugly design issues elsewhere?
 
 extern crate test;
 use std::iter::range;
@@ -49,7 +49,8 @@ impl<'a> BufferedReader<'a> {
 
     /// Return a line with no allocations.  Again, a massive
     /// oversimplification: We're assuming our return value points into an
-    /// I/O buffer.  The analogous read-world function is Buffer::fill_buf.
+    /// I/O buffer.  The analogous read-world function is Buffer::fill_buf,
+    /// plus some custom magic to get us complete lines.
     #[inline]
     pub fn next_line<'a>(&'a mut self) -> Option<&'a str> {
         if self.offset == self.file.len() { return None; }
@@ -94,7 +95,7 @@ fn copying_parser(b: &mut test::Bencher) {
     b.iter(|| {
         let mut reader = BufferedReader::new(file.as_slice());
         let mut parser = CopyingParser::new(&mut reader);
-        // This looks nice, but it's slow.
+        // This looks nice, but it's really slow.
         for result in parser {
             test::black_box(result);
         }
@@ -156,7 +157,9 @@ fn zero_copy_parser(b: &mut test::Bencher) {
     b.iter(|| -> () {
         let mut reader = BufferedReader::new(file.as_slice());
         let mut parser = ZeroCopyParser::new(&mut reader);
-        // I can't figure out how to use the Iterator API here.
+        // This looks ugly, but it's really, really fast.  We're using a
+        // mutable borrow of parser.next() to lock our internal buffers
+        // into place until the borrow expires.
         loop {
             match parser.next() {
                 None => { break; }
