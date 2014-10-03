@@ -17,6 +17,8 @@
 //! Iterator that allows us to use zero_copy_parser without causing ugly
 //! design issues elsewhere?
 
+#![feature(macro_rules, trace_macros)]
+
 extern crate test;
 use std::iter::range;
 
@@ -187,5 +189,50 @@ fn zero_copy_parser(b: &mut test::Bencher) {
                 Some(line) => { test::black_box(line); }
             }
         }
+    });
+}
+
+
+//=========================================================================
+//  Making It Look Nice
+
+//pub trait StreamingIterator<'a, T: 'a> {
+//    fn next_in_stream(&mut self) -> Option<T>;
+//}
+//
+//impl<'a> StreamingIterator<'a, (&'a str, &'a str, &'a str)>
+//    for ZeroCopyParser<'a> {
+//
+//    #[inline]
+//    fn next_in_stream(&mut self) -> Option<(&str, &str, &str)> {
+//        self.next()
+//    }
+//}
+
+macro_rules! streaming_for {
+    ($var:ident in $expr:expr, $b:stmt) => {
+        {
+            loop {
+                let ref mut iter = &mut $expr;
+                match iter.next() {
+                    None => { break; }
+                    Some($var) => { $b }
+                }
+            }
+        }
+    };
+}
+
+#[bench]
+fn replacement_iterator_trait(b: &mut test::Bencher) {
+    let file = make_pretend_file();
+    b.bytes = file.len() as u64;
+    b.iter(|| -> () {
+        let mut reader = BufferedReader::new(file.as_slice());
+        let mut parser = ZeroCopyParser::new(&mut reader);
+
+        streaming_for!(line in parser, { 
+            test::black_box(line);
+        });
     });
 }
