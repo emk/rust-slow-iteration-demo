@@ -150,6 +150,8 @@ impl<'a> ZeroCopyParser<'a> {
 //
 // method `next` has an incompatible type for trait: expected concrete
 // lifetime, found bound lifetime parameter
+//
+// Can I tweak my type declarations and get this to work somehow?
 
 #[bench]
 fn zero_copy_parser(b: &mut test::Bencher) {
