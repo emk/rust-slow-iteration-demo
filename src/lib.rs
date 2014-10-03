@@ -12,7 +12,8 @@
 //! Iterator force us to use something like copying_parser?
 //!
 //! And if Iterator does force us to copy, is there some way to change
-//! Iterator that doesn't cause ugly design issues elsewhere?
+//! Iterator that allows us to use zero_copy_parser without causing ugly
+//! design issues elsewhere?
 
 extern crate test;
 use std::iter::range;
