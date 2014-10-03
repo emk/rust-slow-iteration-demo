@@ -34,32 +34,48 @@ pub fn make_pretend_file() -> String {
     result
 }
 
+/// This is our stand-in for Buffer.  Here, `next_line` is a simpler
+/// stand-in for `fill_buf`, `consume`, etc.
+pub trait Buffer {
+    fn next_line<'a>(&'a mut self) -> Option<&'a str>;
+}
+
 /// This is our stand-in for a smart implementation of the Buffer trait.
 /// In the real world, it has an internal buffer of some sort, and it has
 /// some magic to finesse buffer boundaries for us (in an amortitized
 /// fashion), so we always get all the data associated with a given
 /// iteration.
 pub struct BufferedReader<'a> {
+    // This represents a file, a network connection, a streaming Snappy
+    // decompressor, etc.
     file: &'a str,
-    offset: uint
+    offset: uint,
+    // The represents the I/O buffer inside a real BufferedReader.  No fair
+    // taking this out!
+    buffer: String
 }
 
 impl<'a> BufferedReader<'a> {
     /// Create a new BufferedReader.
-    pub fn new<'a>(file: &'a str) -> BufferedReader<'a> {
-        BufferedReader{file: file, offset: 0}
+    pub fn new(file: &'a str) -> BufferedReader<'a> {
+        BufferedReader{file: file, offset: 0,
+                       buffer: String::with_capacity(LINE.len())}
     }
+}
 
+impl<'a> Buffer for BufferedReader<'a> {
     /// Return a line with no allocations.  Again, a massive
     /// oversimplification: We're assuming our return value points into an
     /// I/O buffer.  The analogous read-world function is Buffer::fill_buf,
     /// plus some custom magic to get us complete lines.
     #[inline]
-    pub fn next_line<'a>(&'a mut self) -> Option<&'a str> {
+    fn next_line<'a>(&'a mut self) -> Option<&'a str> {
         if self.offset == self.file.len() { return None; }
         let result = self.file.slice(self.offset, self.offset + LINE.len());
+        self.buffer.clear();
+        self.buffer.push_str(result);
         self.offset += LINE.len();
-        Some(result)
+        Some(self.buffer.as_slice())
     }
 }
 
